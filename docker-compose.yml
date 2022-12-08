@@ -6,18 +6,21 @@ volumes:
   sonarqube_data: # persist data
   sonarqube_extensions: # persist extensions
   sonarqube_logs: # persist logs
-  postgresql_app: # persist ?
-  postgresql_data: # persist data
+  # postgresql_app: # persist ?
+  # postgresql_data: # persist data
 
 services:
     jenkins:
-        image: myjenkins-blueocean:2.361.2-1
+        build: ../fight-ci
         user: ${UID}:${GID}
         environment:
-            - DOCKER_HOST=tcp://jenkins-dind:2376
+            - DOCKER_HOST=tcp://docker:2376
             - DOCKER_CERT_PATH=/certs/client
             - DOCKER_TLS_VERIFY=1
-            - JAVA_OPTS="-Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true"
+            - JAVA_OPTS=-Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true -Djenkins.install.runSetupWizard=false
+            - CASC_JENKINS_CONFIG=/var/jenkins_home
+            - JENKINS_ADMIN_PASSWORD=allister-dev
+            - JENKINS_ADMIN_ID=allister-dev
         ports:
             - 8080:8080
             - 50000:50000
@@ -26,7 +29,7 @@ services:
             - jenkins_certs:/certs/client:ro
             - $HOME:/home
         
-    jenkins-dind:
+    docker:
         image: docker:dind
         privileged: true
         environment:
@@ -37,30 +40,29 @@ services:
         ports:
             - 2376:2376
 
-    sonarqube:
-        image: sonarqube
-        volumes:
-            - sonarqube_data:/opt/sonarqube/data
-            - sonarqube_extensions:/opt/sonarqube/extensions
-            - sonarqube_logs:/opt/sonarqube/logs
-        ports:
-            - 9000:9000
-
-    postgres:
-      image: postgres:15
-      ports:
-        - '5432:5432'
-      environment:
-        - POSTGRES_USER=postgres
-        - POSTGRES_PASSWORD=postgres
-      volumes:
-        - postgresql_app:/var/lib/postgresql
-        - postgresql_data:/var/lib/postgresql/data
-
-    pgadmin:
-      image: dpage/pgadmin4
-      environment:
-        PGADMIN_DEFAULT_EMAIL: admin@admin.com
-        PGADMIN_DEFAULT_PASSWORD: allister-dev
-      ports:
-        - "5050:80"
+    # sonarqube:
+    #     image: sonarqube
+    #     volumes:
+    #         - sonarqube_data:/opt/sonarqube/data
+    #         - sonarqube_extensions:/opt/sonarqube/extensions
+    #         - sonarqube_logs:/opt/sonarqube/logs
+    #     ports:
+    #         - 9000:9000
+    # postgres:
+    #   build: ../fight-db
+    #   ports:
+    #     - '5432:5432'
+    #   environment:
+    #     - POSTGRES_USER=postgres
+    #     - POSTGRES_PASSWORD=postgres
+    #     - POSTGRES_HOST_AUTH_METHOD=trust
+    #   # volumes:
+    #   #   - postgresql_app:/var/lib/postgresql
+    #   #   - postgresql_data:/var/lib/postgresql/data
+    # pgadmin:
+    #   build: ../fight-db/pgadmin4
+    #   environment:
+    #     PGADMIN_DEFAULT_EMAIL: admin@admin.com
+    #     PGADMIN_DEFAULT_PASSWORD: allister-dev
+    #   ports:
+    #     - "5050:80"
